@@ -1,36 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistem Ujian Online
 
-## Getting Started
+Platform ujian online lengkap dengan manajemen soal, AI generation, face recognition, ranking system, dan sertifikat digital.
 
-First, run the development server:
+## ✨ Fitur Utama
+
+### 🎯 Untuk Admin
+- **Manajemen Kategori Soal** - Atur kategori seperti TIU, TWK, TKP, Teknis, Manajerial, dll
+- **Bank Soal Lengkap** - Buat, edit, dan import soal dalam 3 format (Multiple Choice, Essay, Linear Scale 1-5)
+- **Import/Export Soal** - Upload soal dalam format Excel/CSV
+- **Paket Ujian** - Buat paket ujian dengan multiple kategori (contoh: CPNS = TIU+TWK+TKP)
+- **AI Question Generator** - Generate soal otomatis menggunakan OpenAI
+- **Face Verification Dashboard** - Monitor verifikasi wajah peserta
+
+### 👥 Untuk Peserta/Member
+- **Dashboard Peserta** - Lihat progres dan statistik personal
+- **Ambil Ujian** - Interface ujian yang user-friendly dengan timer
+- **Session Persistence** - Lanjutkan ujian meski browser tertutup
+- **Face Verification** - Verifikasi wajah saat ujian berlangsung
+- **Ranking System** - Lihat peringkat per sesi dan global
+- **Sertifikat Digital** - Download sertifikat untuk ujian yang lulus
+
+## 🛠️ Tech Stack
+
+- Next.js 14, React, TypeScript, Tailwind CSS
+- MySQL + Prisma ORM
+- NextAuth.js
+- OpenAI API (GPT-4)
+
+## 📋 Prerequisites
+
+- Node.js 18+
+- MySQL 8.0+
+- OpenAI API Key (opsional)
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Setup MySQL Database
+
+```bash
+# Login ke MySQL
+mysql -u root -p
+
+# Buat database
+CREATE DATABASE online_exam_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
+```
+
+### 3. Konfigurasi Environment
+
+Copy `.env.example` ke `.env`:
+
+```env
+DATABASE_URL="mysql://root:yourpassword@localhost:3306/online_exam_db"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+NEXTAUTH_URL="http://localhost:3000"
+OPENAI_API_KEY="sk-..."  # Opsional
+```
+
+### 4. Setup Database Schema
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+### 5. Buat Admin User
+
+```bash
+npx prisma studio
+```
+
+Buka http://localhost:5555, masuk ke table `User`, dan buat user dengan:
+- name: Admin
+- email: admin@example.com
+- password: (hash dari "admin123" menggunakan bcrypt)
+- role: ADMIN
+
+### 6. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📝 Format Import Soal (CSV/Excel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```csv
+question,type,option_a,option_b,option_c,option_d,option_e,correct_answer,points
+"2+2=?",MULTIPLE_CHOICE,3,4,5,6,7,1,1
+"Jelaskan demokrasi",ESSAY,,,,,,,1
+"Seberapa setuju?",LINEAR_SCALE,,,,,3,1
+```
 
-## Learn More
+## 🎓 Penggunaan
 
-To learn more about Next.js, take a look at the following resources:
+### Admin:
+1. Login → Buat Kategori → Tambah Soal (manual/import/AI)
+2. Buat Paket Ujian dengan multiple kategori
+3. Publish ujian → Monitor peserta
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Peserta:
+1. Register → Login → Pilih Ujian
+2. Mulai ujian → Kerjakan soal → Submit
+3. Lihat ranking & download sertifikat
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔧 Troubleshooting
 
-## Deploy on Vercel
+**MySQL Connection Error:**
+```bash
+# Cek MySQL service
+sudo service mysql start
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Periksa DATABASE_URL di .env
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Prisma Error:**
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+## 📚 Dokumentasi Lengkap
+
+Lihat dokumentasi lengkap untuk:
+- API Endpoints
+- Database Schema
+- Security Features
+- Production Deployment
+
+## 📄 License
+
+MIT License
+
+---
+
+**Dibuat dengan ❤️ menggunakan Next.js & MySQL**
