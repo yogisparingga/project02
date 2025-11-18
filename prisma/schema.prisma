@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  ESSAY
+  LINEAR_SCALE
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SessionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SUSPENDED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          Role      @default(MEMBER)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  examSessions  ExamSession[]
+  answers       Answer[]
+  rankings      Ranking[]
+  certificates  Certificate[]
+  faceVerifications FaceVerification[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions   Question[]
+  examCategories ExamCategory[]
+
+  @@map("categories")
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  categoryId    String
+  type          QuestionType
+  question      String       @db.Text
+  options       Json?        // For multiple choice: ["option1", "option2", ...]
+  correctAnswer Json?        // For multiple choice: index or array of indices, for linear scale: number 1-5
+  explanation   String?      @db.Text
+  points        Float        @default(1)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  category      Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  answers       Answer[]
+
+  @@index([categoryId])
+  @@map("questions")
+}
+
+model Exam {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  duration    Int          // in minutes
+  status      ExamStatus   @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  passingScore Float?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  categories  ExamCategory[]
+  sessions    ExamSession[]
+  rankings    Ranking[]
+
+  @@map("exams")
+}
+
+model ExamCategory {
+  id          String   @id @default(cuid())
+  examId      String
+  categoryId  String
+  questionCount Int
+  createdAt   DateTime @default(now())
+
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, categoryId])
+  @@index([examId])
+  @@index([categoryId])
+  @@map("exam_categories")
+}
+
+model ExamSession {
+  id          String        @id @default(cuid())
+  userId      String
+  examId      String
+  status      SessionStatus @default(NOT_STARTED)
+  startedAt   DateTime?
+  completedAt DateTime?
+  resumedAt   DateTime?
+  score       Float?
+  rank        Int?
+  sessionData Json?         // Store current state for resume functionality
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam        Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers     Answer[]
+  certificate Certificate?
+  faceVerifications FaceVerification[]
+
+  @@index([userId])
+  @@index([examId])
+  @@index([status])
+  @@map("exam_sessions")
+}
+
+model Answer {
+  id            String      @id @default(cuid())
+  sessionId     String
+  questionId    String
+  userId        String
+  answer        Json        // User's answer (varies by question type)
+  isCorrect     Boolean?
+  pointsEarned  Float?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  session       ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question      Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+  @@index([questionId])
+  @@index([userId])
+  @@map("answers")
+}
+
+model Ranking {
+  id          String   @id @default(cuid())
+  userId      String
+  examId      String
+  score       Float
+  rank        Int
+  globalRank  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([examId, rank])
+  @@index([globalRank])
+  @@map("rankings")
+}
+
+model Certificate {
+  id          String      @id @default(cuid())
+  sessionId   String      @unique
+  userId      String
+  examTitle   String
+  score       Float
+  rank        Int
+  issuedAt    DateTime    @default(now())
+  certificateUrl String?
+
+  session     ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("certificates")
+}
+
+model FaceVerification {
+  id          String      @id @default(cuid())
+  sessionId   String
+  userId      String
+  imageData   String      @db.Text // Base64 encoded image
+  matched     Boolean
+  confidence  Float?
+  createdAt   DateTime    @default(now())
+
+  session     ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([matched])
+  @@map("face_verifications")
+}
+
+model AIGeneration {
+  id          String   @id @default(cuid())
+  categoryId  String?
+  prompt      String   @db.Text
+  response    Json
+  questionCount Int?
+  createdAt   DateTime @default(now())
+
+  @@map("ai_generations")
+}
